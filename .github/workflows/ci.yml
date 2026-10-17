@@ -57,3 +57,25 @@ jobs:
           tags: |
             shreyab0108/you-made-it-girl:latest
             shreyab0108/you-made-it-girl:sha-${{ github.sha }}
+            
+  deploy-to-ec2:
+    needs: publish-docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy on EC2 via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo docker pull shreyab0108/you-made-it-girl:latest
+            sudo docker rm -f you-made-it-girl || true
+            sudo docker run -d \
+              --name you-made-it-girl \
+              --restart unless-stopped \
+              -p 8501:8501 \
+              shreyab0108/you-made-it-girl:latest
+
